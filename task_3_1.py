@@ -1,7 +1,8 @@
 from collections import UserDict
 from datetime import datetime, timedelta
+import pickle
 
-# Classes
+#Classes
 class Field:
     def __init__(self, value):
         self.value = value
@@ -11,7 +12,7 @@ class Field:
 
 class Name(Field):
     def __init__(self, value):
-        if value:   
+        if value:  
             self.value = value
         else:
             raise ValueError("Name field is required")
@@ -79,9 +80,17 @@ class AddressBook(UserDict):
     
     def find(self, name):
         return self.data.get(name)
-    
-    def delete(self, name):
-        del self.data[name]
+
+    def remove_phone(self, name):
+        if name in self.data:
+            del self.data[name]
+            print(f"Contact {name} deleted.")
+        else:
+            print("Contact not found.")
+
+    def save_to_file(self, filename):
+        with open(filename, 'wb') as file:
+            pickle.dump(self.data, file)
 
     def get_birthdays_per_week(self):
         birthday_dict = {"Monday": [], "Tuesday": [], "Wednesday": [], "Thursday": [], "Friday": []}
@@ -115,7 +124,19 @@ class AddressBook(UserDict):
             print("No birthdays in the next week.")
 
 
-# Function to parse user input
+#Function to load the address book from file
+def load_address_book_from_file(filename):
+    try:
+        with open(filename, 'rb') as file:
+            data = pickle.load(file)
+        address_book = AddressBook()
+        address_book.data = data
+        return address_book
+    except (FileNotFoundError, EOFError):
+        return AddressBook()
+
+
+#Function to parse user input
 def parse_input(user_input):
     try:
         cmd, *args = user_input.split()
@@ -123,9 +144,13 @@ def parse_input(user_input):
         return cmd, args
     except ValueError:
         return None, None
+    
 
-# BOT
-book = AddressBook()
+ #Load address book from file   
+book = load_address_book_from_file('addressbook.dat')
+
+
+#BOT
 
 while True:
     user_input = input("Enter command: ").strip()
@@ -139,9 +164,30 @@ while True:
             book.add_record(record)
             print(f"Contact {name} added with phone number {phone}")
 
-        except ValueError:
-            print ("Invalid command format. Use 'add [name] [phone]'")
+        except ValueError as e:
+            print(e)
+            print("Invalid command format. Use 'add [name] [phone]'")
+
     
+    elif cmd == "remove_phone":
+        try:
+            name, phone = args
+            record = book.find(name)
+            if record:
+                phone_found = record.find_phone(phone)
+                if phone_found:
+                    record.remove_phone(phone)
+                    print(f"Phone number {phone} removed for contact {name}.")
+                else:
+                    print(f"Phone number {phone} not found for contact {name}.")
+            else:
+                print(f"Contact {name} not found.")
+
+        except ValueError as e:
+            print(e)
+            print("Invalid command format. Use 'remove-phone [name] [phone]'")
+
+
     elif cmd == "change":
         try:
             name, new_phone = args
@@ -151,7 +197,8 @@ while True:
                 print(f"Phone number changed for contact {name}")
             else:
                 print(f"Contact not found")
-        except ValueError:
+        except ValueError as e:
+            print(e)
             print("Invalid command format. Use 'change [name] [new phone]'")
 
     elif cmd == "phone":
@@ -162,7 +209,8 @@ while True:
                 print(f"Phone number for {name}: {record.phones[0]}")
             else:
                 print(f"Contact {name} not found.")
-        except IndexError:
+        except IndexError as e:
+            print(e)
             print("Invalid command format. Use 'phone [name]'")
 
     elif cmd == "all":
@@ -170,7 +218,6 @@ while True:
             print("All contacts:")
             for record in book.data.values():
                 print(record)
-        
         else:
             print("No contacts in the address book.")
 
@@ -184,7 +231,8 @@ while True:
             else:
                 print(f"Contact {name} not found")
                 
-        except ValueError:
+        except ValueError as e:
+            print(e)
             print("Invalid command format. Use 'add-birthday [name] [birth date]'")
 
     elif cmd == "show-birthday":
@@ -197,7 +245,8 @@ while True:
                 print(f"No birthday set for {name}")
             else: 
                 print(f"Contact {name} not found.")
-        except IndexError:
+        except IndexError as e:
+            print(e)
             print("Invalid command format. Use 'show-birthday [name]'")
 
     elif cmd == "birthdays":
@@ -207,8 +256,14 @@ while True:
         print("Hello!")
     
     elif cmd == "close" or cmd == "exit":
-        print("Closing the app.")
+        book.save_to_file('addressbook.dat')
+        print("Saving address book and closing the app.")
         break
 
     else:
         print("Invalid command. Please try again")
+
+
+
+
+
