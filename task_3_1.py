@@ -1,19 +1,6 @@
 from collections import UserDict
 from datetime import datetime, timedelta
 
-# Error handling decorator
-def input_error(func):
-    def inner(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except ValueError:
-            return "Give me name and phone please."
-        except KeyError:
-            return "Contact not found."
-        except IndexError:
-            return "Invalid command. Please provide necessary arguments."
-    return inner
-
 # Classes
 class Field:
     def __init__(self, value):
