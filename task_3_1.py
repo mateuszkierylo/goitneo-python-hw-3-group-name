@@ -1,6 +1,22 @@
 from collections import UserDict
 from datetime import datetime, timedelta
 
+
+# error handling:
+def input_error(func):
+    def inner(args, kwargs):
+        try:
+            return func(args, kwargs)
+        except ValueError:
+            return "Give me name and phone please."
+        except KeyError:
+            return "Contact not found."
+        except IndexError:
+            return "Invalid command. Please provide necessary arguments."
+    return inner
+
+
+#classes:
 class Field:
     def __init__(self, value):
         self.value = value
@@ -113,4 +129,104 @@ class AddressBook(UserDict):
 
 
 
-# Function to parse user input
+# function to parse user input
+
+def parse_input(user_input):
+    try:
+        cmd, * args = user_input.split()
+        cmd = cmd.strip().lower
+        return cmd, args
+    except ValueError:
+        return None, None
+
+
+# BOT:
+book = AddressBook()
+
+while True:
+    user_input = input("Enter command: ").strip()
+    cmd, args = parse_input(user_input)
+
+    if cmd == "add":
+        try:
+            name, phone = args
+            record = Record(name)
+            record.add_phone(phone)
+            book.add_record(record)
+            print(f"Contact {name} addes with phone numver {phone}")
+
+        except ValueError:
+            print ("Invalid command format. Use 'add [name] [phone]'")
+    
+    elif cmd == "change":
+        try:
+            name, new_phone = args
+            record = book.find(name)
+            if record:
+                record.edit_phone(record.phones[0].value, new_phone)
+                print(f"Phone number changed for contact {name}")
+            else:
+                print(f"Contact not found")
+        except ValueError:
+            print("Invalid command format. Use 'change [name] [new phone]'")
+
+    elif cmd == "phone":
+        try:
+            name = args[0]
+            record = book.find(name)
+            if record:
+                print(f"Phone number for {name}: {record.phones[0]}")
+            else:
+                print(f"Contact {name} not found.")
+        except IndexError:
+            print("Invalid command format. Use 'phone [name]'")
+
+    elif cmd == "all":
+        if book.data:
+            print("All contacts:")
+            for record in book.data.values():
+                print(record)
+        
+        else:
+            print("No contacts in the address book.")
+
+    elif cmd == "add-birthday":
+        try:
+            name, birthday = args
+            record = book.find(name)
+            if record:
+                record.add_birthday(birthday)
+                print(f"Birthday added for contact {name}")
+            else:
+                print(f"Contact {name} not found")
+        except ValueError:
+            print("Invalid command format. Use 'add-birthday [name] [birth date]'")
+
+    elif cmd == "show-birthday":
+        try:
+            name = args[0]
+            record.book.find(name)
+            if record and record.birthday:
+                print(f"Birthday for {name}: {record.birthday}")
+            elif record and not record.birthday:
+                print(f"No birthday set for {name}")
+            else: 
+                print(f"Contact {name} not found.")
+        except IndexError:
+            print("Invalid command format. Use 'show-birthday [name]'")
+
+    elif cmd == "birthdays":
+        book.get_birthdays_per_week()
+
+    elif cmd == "hello":
+        print("Hello!")
+    
+    elif cmd == "close" or cmd == "exit":
+        print("Closing the app.")
+        break
+
+    else:
+        print("Invalid command. Please try again")
+
+
+
