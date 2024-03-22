@@ -1,12 +1,11 @@
 from collections import UserDict
 from datetime import datetime, timedelta
 
-
-# error handling:
+# Error handling decorator
 def input_error(func):
-    def inner(args, kwargs):
+    def inner(*args, **kwargs):
         try:
-            return func(args, kwargs)
+            return func(*args, **kwargs)
         except ValueError:
             return "Give me name and phone please."
         except KeyError:
@@ -15,8 +14,7 @@ def input_error(func):
             return "Invalid command. Please provide necessary arguments."
     return inner
 
-
-#classes:
+# Classes
 class Field:
     def __init__(self, value):
         self.value = value
@@ -36,7 +34,7 @@ class Phone(Field):
         if self.validate_phone(value):
             self.value = value
         else:
-            print("Invalid phone number: must be 10 digits")
+            raise ValueError("Invalid phone number: must be 10 digits")
     
     def validate_phone(self, phone):
         return len(str(phone)) == 10
@@ -46,8 +44,7 @@ class Birthday(Field):
         if self.validate_birthday(value):
             self.value = value
         else:
-            raise
-        ValueError("Invalid birthday format. DD.MM.YYYY required")
+            raise ValueError("Invalid birthday format. DD.MM.YYYY required")
 
     def validate_birthday(self, birthday):
         try:
@@ -63,7 +60,7 @@ class Record:
         self.birthday = None
 
     def add_birthday(self, birthday):
-        self.birthday = birthday
+        self.birthday = Birthday(birthday)
 
     def add_phone(self, phone):
         self.phones.append(Phone(phone))
@@ -86,7 +83,7 @@ class Record:
 
     def __str__(self):
         phone_str = "; ".join(str(phone) for phone in self.phones)
-        birthday_str = f", Birthday: {self.birthday}" if self.birthday else ""
+        birthday_str = f", Birthday: {self.birthday.value}" if self.birthday else ""
         return f"Contact name: {self.name.value}, phones: {phone_str}{birthday_str}"
 
 class AddressBook(UserDict):
@@ -112,35 +109,35 @@ class AddressBook(UserDict):
                 if birthday_this_year < today:
                     birthday_this_year = birthday_this_year.replace(year=today.year + 1)
 
-                    delta_days = (birthday_this_year - today).days
+                delta_days = (birthday_this_year - today).days
 
-                    day_of_week = (today + timedelta(days=delta_days)).strftime("%A") if 0 <= delta_days < 7 else None
+                day_of_week = (today + timedelta(days=delta_days)).strftime("%A") if 0 <= delta_days < 7 else None
 
                 if day_of_week in ["Saturday", "Sunday"]:
                     day_of_week = "Monday"
+
+                if day_of_week:
+                    birthday_dict[day_of_week].append(name)
 
         if any(birthday_dict.values()):
             print("Birthdays in the next week:")
             for day, names in birthday_dict.items():
                 if names:
-                    print(f"{day}: {", ".join(names)}")
+                    print(f"{day}: {', '.join(names)}")
         else:
             print("No birthdays in the next week.")
 
 
-
-# function to parse user input
-
+# Function to parse user input
 def parse_input(user_input):
     try:
-        cmd, * args = user_input.split()
-        cmd = cmd.strip().lower
+        cmd, *args = user_input.split()
+        cmd = cmd.strip().lower()
         return cmd, args
     except ValueError:
         return None, None
 
-
-# BOT:
+# BOT
 book = AddressBook()
 
 while True:
@@ -153,7 +150,7 @@ while True:
             record = Record(name)
             record.add_phone(phone)
             book.add_record(record)
-            print(f"Contact {name} addes with phone numver {phone}")
+            print(f"Contact {name} added with phone number {phone}")
 
         except ValueError:
             print ("Invalid command format. Use 'add [name] [phone]'")
@@ -199,13 +196,14 @@ while True:
                 print(f"Birthday added for contact {name}")
             else:
                 print(f"Contact {name} not found")
+                
         except ValueError:
             print("Invalid command format. Use 'add-birthday [name] [birth date]'")
 
     elif cmd == "show-birthday":
         try:
             name = args[0]
-            record.book.find(name)
+            record = book.find(name)
             if record and record.birthday:
                 print(f"Birthday for {name}: {record.birthday}")
             elif record and not record.birthday:
@@ -227,6 +225,3 @@ while True:
 
     else:
         print("Invalid command. Please try again")
-
-
-
